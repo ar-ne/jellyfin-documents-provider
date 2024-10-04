@@ -8,7 +8,7 @@ import io.objectbox.query.QueryBuilder
 object ObjectBox {
     private lateinit var store: BoxStore
 
-    lateinit var credential: Box<JellyfinCredential>
+    lateinit var credential: Box<JellyfinServer>
         private set
 
     lateinit var virtualFile: Box<VirtualFile>
@@ -17,14 +17,14 @@ object ObjectBox {
         store = MyObjectBox.builder()
             .androidContext(context.applicationContext)
             .build()
-        credential = store.boxFor(JellyfinCredential::class.java)
+        credential = store.boxFor(JellyfinServer::class.java)
         virtualFile = store.boxFor(VirtualFile::class.java)
     }
 
-    fun Box<JellyfinCredential>.updateLibrarySel(
+    fun Box<JellyfinServer>.updateLibrarySel(
         userId: Long,
         lib: Map<String, String>
-    ): JellyfinCredential {
+    ): JellyfinServer {
         val credential = credential.get(userId)
         val copy = credential.copy(library = lib)
         ObjectBox.credential.put(copy)

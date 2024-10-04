@@ -130,7 +130,7 @@ fun LibrarySelectionScreen(viewModel: ServerWizardViewModel = viewModel()) {
 
 @Composable
 @Preview
-private fun LibraryItem(
+fun LibraryItem(
     @PreviewParameter(LibraryProvider::class) library: ServerWizardViewModel.Library,
     onClick: () -> Unit = {}
 ) {

@@ -20,13 +20,16 @@ import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.request.GetItemsRequest
 
-class JellyfinAccessor(private val ctx: Context, val credential: JellyfinCredential) {
+class JellyfinAccessor(private val ctx: Context, val credential: JellyfinServer) {
     private val api: ApiClient = createJellyfin(ctx).createApi(
         baseUrl = credential.url,
         accessToken = credential.token,
     )
 
-    suspend fun userView() =
+    /**
+     * get all user libraries
+     */
+    suspend fun libraries() =
         api.userViewsApi.getUserViews().content.items
 
     companion object {
@@ -74,7 +77,7 @@ class JellyfinAccessor(private val ctx: Context, val credential: JellyfinCredent
     ) {
         suspend fun login(
             ctx: Context
-        ): JellyfinCredential {
+        ): JellyfinServer {
             if (url.isBlank())
                 throw IllegalArgumentException("The baseUrl must not leave blank!")
 
@@ -95,7 +98,7 @@ class JellyfinAccessor(private val ctx: Context, val credential: JellyfinCredent
                 )
                 logcat { "user info: ${authResult.user}" }
 
-                return JellyfinCredential(
+                return JellyfinServer(
                     url = url,
                     serverName = serverPublicInfo.serverName ?: "Unknown Server",
                     library = mapOf(),

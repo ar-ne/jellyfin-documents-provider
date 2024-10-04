@@ -30,7 +30,7 @@ class DatabaseSyncWorker(appContext: Context, workerParams: WorkerParameters) :
     }
 
 
-    private suspend fun sync(credential: MutableList<JellyfinCredential>): Result {
+    private suspend fun sync(credential: MutableList<JellyfinServer>): Result {
         if (credential.isEmpty()) {
             logcat(LogPriority.ERROR) {
                 "some of the credential not found"

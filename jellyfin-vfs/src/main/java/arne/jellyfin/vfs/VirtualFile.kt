@@ -26,11 +26,11 @@ data class VirtualFile(
     val credentialId: Long = 0,
     val mediaInfoId: Long = 0,
 ) {
-    lateinit var credential: ToOne<JellyfinCredential>
+    lateinit var credential: ToOne<JellyfinServer>
     lateinit var mediaInfo: ToOne<MediaInfo>
 
     companion object {
-        fun BaseItemDto.toVirtualFile(credential: JellyfinCredential): VirtualFile {
+        fun BaseItemDto.toVirtualFile(credential: JellyfinServer): VirtualFile {
             val mediaSource = mediaSources?.first()!!
             return VirtualFile(
                 name = name!!,

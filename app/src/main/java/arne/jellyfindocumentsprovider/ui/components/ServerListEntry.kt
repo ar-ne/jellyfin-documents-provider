@@ -23,12 +23,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,15 +47,37 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import arne.hacks.logcat
-import arne.jellyfin.vfs.JellyfinCredential
+import arne.jellyfin.vfs.JellyfinServer
+import arne.jellyfindocumentsprovider.common.useNavController
 import kotlin.math.roundToInt
 
+@Composable
+fun ServerItem(credential: JellyfinServer) {
+    val navController = useNavController()
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirm)
+        AlertDialog(onDismissRequest = { showDeleteConfirm = false },
+            confirmButton = {
+                TextButton(onClick = {}) {
+                    Text("Confirm")
+                }
+            }, text = { Text("Delete server?") })
+
+    ServerItemInternal(credential, sync = {}, delete = {
+        showDeleteConfirm = true
+    }, onClick = {
+        navController {
+            navigate("server-setting/${credential.id}")
+        }
+    })
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 @Preview
-fun ServerItem(
-    @PreviewParameter(ServerItemProvider::class) credential: JellyfinCredential,
+private fun ServerItemInternal(
+    @PreviewParameter(ServerItemProvider::class) credential: JellyfinServer,
     sync: () -> Unit = {},
     delete: () -> Unit = {},
     onClick: () -> Unit = {},
@@ -179,9 +203,9 @@ fun ServerItem(
 }
 
 
-private class ServerItemProvider : PreviewParameterProvider<JellyfinCredential> {
+class ServerItemProvider : PreviewParameterProvider<JellyfinServer> {
     override val values = sequenceOf(
-        JellyfinCredential(
+        JellyfinServer(
             url = "https://jellyfin.example.com",
             serverName = "Jellyfin Server",
             library = mapOf("id" to "id", "name" to "name"),

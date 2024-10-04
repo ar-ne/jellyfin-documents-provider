@@ -1,4 +1,4 @@
-package arne.hacks.vfs
+package arne.jellyfin.vfs
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("arne.jfdp.vfs.test", appContext.packageName)
+        assertEquals("arne.jellyfin.vfs.test", appContext.packageName)
     }
 }

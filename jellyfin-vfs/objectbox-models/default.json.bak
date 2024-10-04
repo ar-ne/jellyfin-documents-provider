@@ -4,6 +4,50 @@
   "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
   "entities": [
     {
+      "id": "1:5476914582484519542",
+      "lastPropertyId": "7:1078513588408160223",
+      "name": "JellyfinCredential",
+      "properties": [
+        {
+          "id": "1:6937621494826725020",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:822321001093284484",
+          "name": "url",
+          "type": 9
+        },
+        {
+          "id": "3:3787182040848986742",
+          "name": "serverName",
+          "type": 9
+        },
+        {
+          "id": "4:7833788859291473594",
+          "name": "library",
+          "type": 13
+        },
+        {
+          "id": "5:8369919902896546251",
+          "name": "uid",
+          "type": 9
+        },
+        {
+          "id": "6:2806237006104245827",
+          "name": "username",
+          "type": 9
+        },
+        {
+          "id": "7:1078513588408160223",
+          "name": "token",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
       "id": "2:1616532601529612807",
       "lastPropertyId": "10:2793890288946484109",
       "name": "MediaInfo",
@@ -120,7 +164,7 @@
           "indexId": "4:4381728228594325069",
           "type": 11,
           "flags": 520,
-          "relationTarget": "JellyfinServer"
+          "relationTarget": "JellyfinCredential"
         },
         {
           "id": "10:8842191763226687266",
@@ -132,71 +176,17 @@
         }
       ],
       "relations": []
-    },
-    {
-      "id": "4:5579627283610275790",
-      "lastPropertyId": "7:6542922106562276123",
-      "name": "JellyfinServer",
-      "properties": [
-        {
-          "id": "1:403483561491934948",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:7471700348973400122",
-          "name": "url",
-          "type": 9
-        },
-        {
-          "id": "3:5149699655298184682",
-          "name": "serverName",
-          "type": 9
-        },
-        {
-          "id": "4:7113255589564820360",
-          "name": "library",
-          "type": 13
-        },
-        {
-          "id": "5:7864924661773186624",
-          "name": "uid",
-          "type": 9
-        },
-        {
-          "id": "6:949111543241693468",
-          "name": "username",
-          "type": 9
-        },
-        {
-          "id": "7:6542922106562276123",
-          "name": "token",
-          "type": 9
-        }
-      ],
-      "relations": []
     }
   ],
-  "lastEntityId": "4:5579627283610275790",
+  "lastEntityId": "3:8704842816978619835",
   "lastIndexId": "5:3507173133045467471",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,
   "modelVersionParserMinimum": 5,
-  "retiredEntityUids": [
-    5476914582484519542
-  ],
+  "retiredEntityUids": [],
   "retiredIndexUids": [],
-  "retiredPropertyUids": [
-    6937621494826725020,
-    822321001093284484,
-    3787182040848986742,
-    7833788859291473594,
-    8369919902896546251,
-    2806237006104245827,
-    1078513588408160223
-  ],
+  "retiredPropertyUids": [],
   "retiredRelationUids": [],
   "version": 1
 }

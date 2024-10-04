@@ -5,10 +5,13 @@ import io.objectbox.annotation.Entity
 import io.objectbox.annotation.Id
 
 @Entity
-data class JellyfinCredential(
+data class JellyfinServer(
     @Id var id: Long = 0,
     val url: String,
     val serverName: String,
+    /**
+     * LibraryID <=> LibraryName
+     */
     val library: Map<String, String>,
 
     val uid: String,

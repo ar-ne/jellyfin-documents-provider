@@ -13,14 +13,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import arne.jellyfindocumentsprovider.MainActivity
 import arne.jellyfindocumentsprovider.ui.components.ServerItem
 
 @Composable
 fun HomeScreen(
-    appViewModel: AppViewModel = viewModel(),
-    globalNav: NavHostController? = null
+    appViewModel: AppViewModel = viewModel()
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
@@ -39,20 +36,7 @@ fun HomeScreen(
     Column(
         modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        servers.map {
-            ServerItem(
-                credential = it,
-                sync = {
-
-                },
-                delete = {
-                    appViewModel.deleteServer(it)
-                },
-                onClick = {
-                    globalNav?.navigate(MainActivity.ServerSettings)
-                }
-            )
-        }
+        servers.map { ServerItem(credential = it) }
         if (servers.isEmpty()) Text("No servers found")
     }
 }
