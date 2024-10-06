@@ -6,6 +6,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import arne.hacks.logcat
 import arne.hacks.toPropertyMap
 import arne.jellyfin.vfs.DatabaseSyncWorker
 import arne.jellyfin.vfs.DatabaseSyncWorker.SyncRequest
@@ -51,7 +52,12 @@ class AppViewModel : ViewModel() {
 
     @Synchronized
     fun WorkManager.requestSync(info: ServerListEntryInfo?) {
-        if (_sync.value != null) throw IllegalStateException("Sync already in progress")
+        if (_sync.value != null) {
+            logcat {
+                "Sync already in progress"
+            }
+            return
+        }
         _sync.value = OneTimeWorkRequestBuilder<DatabaseSyncWorker>()
             .setInputData(
                 workDataOf(
