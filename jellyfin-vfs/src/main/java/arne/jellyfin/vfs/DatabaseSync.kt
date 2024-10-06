@@ -1,9 +1,8 @@
 package arne.jellyfin.vfs
 
 import arne.hacks.logcat
-import arne.jellyfin.vfs.ObjectBox.findAllByLibId
+import arne.jellyfin.vfs.ObjectBox.update
 import arne.jellyfin.vfs.VirtualFile.Companion.toVirtualFile
-import logcat.LogPriority
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 class DatabaseSync(
@@ -11,53 +10,44 @@ class DatabaseSync(
 ) {
     suspend fun sync(
         batchSize: Int = 1000,
-        onProgress: (Progress) -> Unit
+        onProgress: (Int) -> Unit
     ) {
-        val progress = Progress(0, -1, "", Progress.Step.PREPARE)
-        progress.run(onProgress)
-        val library = accessor.credential.library
-
-        val libraryTotal = library.values.associateWith {
-            accessor.queryAudioItems(it)?.totalRecordCount ?: 0
+        logcat {
+            "[${accessor.credential.name}] syncing database for ${accessor.credential.info}"
+        }
+        onProgress(-1)
+        val libraryTotal = accessor.credential.library.keys.associateWith {
+            accessor.queryAudioItems(it, limit = 0)?.totalRecordCount ?: 0
         }
 
+        logcat {
+            "[${accessor.credential.name}] total library to sync: ${libraryTotal.size}"
+        }
         val total = libraryTotal.values.sum()
         var proceed = 0
-        progress.also { it.total = total }.run(onProgress)
 
         libraryTotal.forEach { (libId, libTotal) ->
-            val fetchIdSet = mutableSetOf<String>()
-            fetchItemsInBatches(
-                libId = libId,
-                batchSize = batchSize,
-                totalItems = libTotal,
-                onFetch = { items ->
-                    val virtualFiles = items.map { dto -> dto.toVirtualFile(accessor.credential) }
-                    fetchIdSet.addAll(virtualFiles.map { it.documentId })
-
-                    ObjectBox.virtualFile.put(virtualFiles)
-                    proceed += items.size
-                    progress.also { p ->
-                        p.current = 100 * proceed / total
-                        p.step = Progress.Step.FETCH
-                    }.run(onProgress)
-                }
-            )
-
-            progress.also {
-                it.step = Progress.Step.CLEAN
+            logcat {
+                "[${accessor.credential.name}] syncing library: $libId"
             }
-            val localIdSet = ObjectBox.virtualFile.findAllByLibId(libId)
-            while (true) {
-                val t = fetchIdSet.firstOrNull() ?: break
-                fetchIdSet.remove(t)
-                localIdSet.remove(t)
-            }
-            logcat(LogPriority.DEBUG) {
-                "${localIdSet.size} to remove for $libId"
-            }
+            ObjectBox.virtualFile.update(libId) {
+                fetchItemsInBatches(
+                    libId = libId,
+                    batchSize = batchSize,
+                    totalItems = libTotal,
+                    onFetch = { items ->
+                        val virtualFiles =
+                            items.map { dto -> dto.toVirtualFile(accessor.credential) }
+                        it.put(virtualFiles)
 
-            ObjectBox.virtualFile.remove(localIdSet.map { it.value })
+                        proceed += items.size
+                        onProgress((100 * proceed / total))
+                        logcat {
+                            "[${accessor.credential.name}] syncing library: $libId ... $proceed/$total"
+                        }
+                    }
+                )
+            }
         }
     }
 
@@ -81,18 +71,4 @@ class DatabaseSync(
             }
         }
     }
-
-    data class Progress(
-        var current: Int,
-        var total: Int,
-        var extra: String,
-        var step: Step = Step.PREPARE
-    ) {
-        enum class Step {
-            PREPARE,
-            FETCH,
-            CLEAN,
-        }
-    }
-
 }

@@ -82,7 +82,7 @@ class ServerWizardViewModel(application: Application) : AndroidViewModel(applica
         val cred = server!!.copy(
             library = libraries.filter { it.checked }.associate { it.id to it.name }
         )
-        ObjectBox.credential.put(cred)
+        ObjectBox.server.put(cred)
         (activityCtx as? ServerWizardActivity)?.finish()
     }
 
@@ -90,11 +90,11 @@ class ServerWizardViewModel(application: Application) : AndroidViewModel(applica
         val name: String,
         val id: String,
         var checked: Boolean = false,
-        val dto: BaseItemDto? = null
+        var type: String? = null,
     ) {
         companion object {
             fun BaseItemDto.toLibrary(): Library {
-                return Library(name ?: "Unknown", id.toString(), dto = this)
+                return Library(name ?: "Unknown", id.toString(), type = collectionType?.name)
             }
         }
     }

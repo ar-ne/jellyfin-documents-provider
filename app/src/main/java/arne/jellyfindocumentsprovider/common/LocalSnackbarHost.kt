@@ -4,14 +4,15 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-val LocalSnackbarHostState = compositionLocalOf<SnackbarHostState> {
+val LocalSnackbarHostState = staticCompositionLocalOf<SnackbarHostState> {
     error("No SnackbarHostState provided")
 }
 
-val LocalSnackbarScope = compositionLocalOf<CoroutineScope> {
+val LocalSnackbarScope = staticCompositionLocalOf<CoroutineScope> {
     error("No SnackbarScope provided")
 }
 

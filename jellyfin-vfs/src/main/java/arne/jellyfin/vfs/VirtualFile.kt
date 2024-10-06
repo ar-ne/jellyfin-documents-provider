@@ -12,7 +12,7 @@ import java.time.ZoneOffset
 @Entity
 data class VirtualFile(
     @Id var id: Long = 0,
-    @Index val name: String,
+    val name: String,
     @Index val documentId: String,
 
     // attributes
@@ -23,10 +23,10 @@ data class VirtualFile(
 
     // links
     @Index val libId: String,
-    val credentialId: Long = 0,
+    @Index val serverId: Long = 0,
     val mediaInfoId: Long = 0,
 ) {
-    lateinit var credential: ToOne<JellyfinServer>
+    lateinit var server: ToOne<JellyfinServer>
     lateinit var mediaInfo: ToOne<MediaInfo>
 
     companion object {
@@ -41,7 +41,7 @@ data class VirtualFile(
                 size = mediaSource.size ?: 0,
                 libId = credential.library.keys.first()
             ).also {
-                it.credential.target = credential
+                it.server.target = credential
                 it.mediaInfo.target = toMediaInfo()
             }
         }

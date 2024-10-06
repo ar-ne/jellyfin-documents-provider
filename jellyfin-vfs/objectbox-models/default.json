@@ -64,7 +64,7 @@
     },
     {
       "id": "3:8704842816978619835",
-      "lastPropertyId": "10:8842191763226687266",
+      "lastPropertyId": "11:8288882662607813946",
       "name": "VirtualFile",
       "properties": [
         {
@@ -76,9 +76,7 @@
         {
           "id": "2:7284230746090642409",
           "name": "name",
-          "indexId": "1:1682840875410441618",
-          "type": 9,
-          "flags": 2048
+          "type": 9
         },
         {
           "id": "3:4726252619257018225",
@@ -115,27 +113,27 @@
           "flags": 2048
         },
         {
-          "id": "9:5873054035952950978",
-          "name": "credentialId",
-          "indexId": "4:4381728228594325069",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "JellyfinServer"
-        },
-        {
           "id": "10:8842191763226687266",
           "name": "mediaInfoId",
           "indexId": "5:3507173133045467471",
           "type": 11,
           "flags": 520,
           "relationTarget": "MediaInfo"
+        },
+        {
+          "id": "11:8288882662607813946",
+          "name": "serverId",
+          "indexId": "6:1693117259271809989",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "JellyfinServer"
         }
       ],
       "relations": []
     },
     {
       "id": "4:5579627283610275790",
-      "lastPropertyId": "7:6542922106562276123",
+      "lastPropertyId": "8:4393412850763304826",
       "name": "JellyfinServer",
       "properties": [
         {
@@ -173,13 +171,18 @@
           "id": "7:6542922106562276123",
           "name": "token",
           "type": 9
+        },
+        {
+          "id": "8:4393412850763304826",
+          "name": "serverId",
+          "type": 9
         }
       ],
       "relations": []
     }
   ],
   "lastEntityId": "4:5579627283610275790",
-  "lastIndexId": "5:3507173133045467471",
+  "lastIndexId": "6:1693117259271809989",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,
@@ -187,7 +190,10 @@
   "retiredEntityUids": [
     5476914582484519542
   ],
-  "retiredIndexUids": [],
+  "retiredIndexUids": [
+    4381728228594325069,
+    1682840875410441618
+  ],
   "retiredPropertyUids": [
     6937621494826725020,
     822321001093284484,
@@ -195,7 +201,8 @@
     7833788859291473594,
     8369919902896546251,
     2806237006104245827,
-    1078513588408160223
+    1078513588408160223,
+    5873054035952950978
   ],
   "retiredRelationUids": [],
   "version": 1

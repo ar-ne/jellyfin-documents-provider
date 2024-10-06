@@ -27,9 +27,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import arne.jellyfin.vfs.JellyfinServer
 import arne.jellyfin.vfs.ObjectBox
-import arne.jellyfindocumentsprovider.common.LocalNavController
 import arne.jellyfindocumentsprovider.common.Query.Companion.useQuery
 import arne.jellyfindocumentsprovider.common.useLocalSnackbar
+import arne.jellyfindocumentsprovider.common.useNav
 import arne.jellyfindocumentsprovider.ui.serverWizard.LibraryItem
 import arne.jellyfindocumentsprovider.ui.serverWizard.ServerWizardViewModel.Library.Companion.toLibrary
 import kotlinx.coroutines.launch
@@ -38,10 +38,10 @@ import kotlinx.coroutines.launch
 @Composable
 @Preview
 fun ServerSetting(id: Long = 0) {
-    val credential by remember { mutableStateOf<JellyfinServer>(ObjectBox.credential.get(id)) }
+    val credential by remember { mutableStateOf<JellyfinServer>(ObjectBox.server.get(id)) }
     val selection = remember { mutableStateMapOf<String, Boolean>() }
     val context = LocalContext.current
-    val globalNav = LocalNavController.current
+    val nav = useNav()
 
     val query = useQuery(
         onLoad = { lib ->
@@ -61,12 +61,15 @@ fun ServerSetting(id: Long = 0) {
                 TopAppBar(
                     title = {
                         Column(modifier = Modifier.fillMaxWidth()) {
-                            Text("Server Settings - ${credential.serverName}", fontSize = 22.sp)
-                            Text("${credential.username}@${credential.url}", fontSize = 16.sp)
+                            Text(
+                                "Server Settings - ${credential.username}@${credential.serverName}",
+                                fontSize = 20.sp
+                            )
+                            Text(credential.url, fontSize = 16.sp)
                         }
                     },
                     navigationIcon = {
-                        IconButton(onClick = { globalNav.popBackStack() }) {
+                        IconButton(onClick = { nav { popBackStack() } }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back"
@@ -78,14 +81,14 @@ fun ServerSetting(id: Long = 0) {
                             enabled = state.isSuccess,
                             onClick = {
                                 coroutineScope.launch {
-                                    ObjectBox.credential.put(credential.copy(
+                                    ObjectBox.server.put(credential.copy(
                                         library = if (!data.isNullOrEmpty()) {
                                             data.associate { it.id to it.name }.filter {
                                                 selection[it.key] ?: false
                                             }
                                         } else credential.library
                                     ))
-                                    globalNav.popBackStack()
+                                    nav { popBackStack() }
                                     snackbar {
                                         showSnackbar("Saved", duration = SnackbarDuration.Long)
                                     }
@@ -124,7 +127,10 @@ fun ServerSetting(id: Long = 0) {
                 }
 
                 if (state.isError)
-                    Text("Error loading library")
+                    Column {
+                        Text("Error loading library")
+                        Text(state.message ?: "Unknown Error")
+                    }
             }
         }
     }

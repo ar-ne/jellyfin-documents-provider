@@ -14,5 +14,5 @@ inline fun <reified T : Any> fromMap(map: Map<String, Any>): T {
     return constructor.callBy(args)
 }
 
-inline fun <reified T : Any> T.toMap(): Map<String, Any?> =
+inline fun <reified T : Any> T.toPropertyMap(): Map<String, Any?> =
     T::class.memberProperties.associate { it.name to it.get(this) }

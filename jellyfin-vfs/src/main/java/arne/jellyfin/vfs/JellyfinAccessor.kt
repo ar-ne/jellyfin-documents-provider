@@ -101,10 +101,11 @@ class JellyfinAccessor(private val ctx: Context, val credential: JellyfinServer)
                 return JellyfinServer(
                     url = url,
                     serverName = serverPublicInfo.serverName ?: "Unknown Server",
+                    serverId = authResult.serverId!!,
                     library = mapOf(),
                     uid = authResult.user!!.id.toString(),
                     token = authResult.accessToken!!,
-                    username = authResult.user!!.name!!,
+                    username = authResult.user!!.name!!
                 )
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR) {
@@ -114,6 +115,4 @@ class JellyfinAccessor(private val ctx: Context, val credential: JellyfinServer)
             throw IllegalArgumentException("unable to login to server $url")
         }
     }
-
-
 }

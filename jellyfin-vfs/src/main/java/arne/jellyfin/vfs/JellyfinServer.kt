@@ -9,6 +9,7 @@ data class JellyfinServer(
     @Id var id: Long = 0,
     val url: String,
     val serverName: String,
+    val serverId: String,
     /**
      * LibraryID <=> LibraryName
      */
@@ -19,6 +20,8 @@ data class JellyfinServer(
     val token: String,
 ) {
     fun asAccessor(ctx: Context) = JellyfinAccessor(ctx, this)
+    val info get() = "${username}@${serverName}(${url})"
+    val name get() = "${username}@${serverName}"
 }
 
 

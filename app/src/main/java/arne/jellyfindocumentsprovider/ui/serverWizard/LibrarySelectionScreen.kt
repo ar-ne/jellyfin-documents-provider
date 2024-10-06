@@ -145,12 +145,10 @@ fun LibraryItem(
         onClick = onClick,
         shape = CardDefaults.elevatedShape,
     ) {
-        ListItem(headlineContent = { Text("${library.name} (${library.dto?.collectionType ?: "Unknown Type"})") },
+        ListItem(headlineContent = { Text("${library.name} (${library.type ?: "Unknown Type"})") },
             supportingContent = {
                 Column {
                     Text("ID: ${library.id}")
-                    Text("Album Count: ${library.dto?.albumCount ?: "Unknown"}")
-                    Text("Song Count: ${library.dto?.songCount ?: "Unknown"}")
                 }
             })
     }

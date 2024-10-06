@@ -42,6 +42,7 @@ class Query {
                     onLoad(data!!)
                 } catch (e: Exception) {
                     state = State.ERROR
+                    state.message = e.stackTraceToString()
                 }
 
             }
@@ -62,6 +63,8 @@ class Query {
 
     enum class State {
         ERROR, PENDING, FETCHING, SUCCESS;
+
+        var message: String? = null
 
         val isFetching get() = this == FETCHING
         val isError get() = this == ERROR

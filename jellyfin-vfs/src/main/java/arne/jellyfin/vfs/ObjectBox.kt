@@ -3,12 +3,14 @@ package arne.jellyfin.vfs
 import android.content.Context
 import io.objectbox.Box
 import io.objectbox.BoxStore
+import io.objectbox.kotlin.query
 import io.objectbox.query.QueryBuilder
+import kotlinx.coroutines.runBlocking
 
 object ObjectBox {
     private lateinit var store: BoxStore
 
-    lateinit var credential: Box<JellyfinServer>
+    lateinit var server: Box<JellyfinServer>
         private set
 
     lateinit var virtualFile: Box<VirtualFile>
@@ -17,18 +19,17 @@ object ObjectBox {
         store = MyObjectBox.builder()
             .androidContext(context.applicationContext)
             .build()
-        credential = store.boxFor(JellyfinServer::class.java)
+        server = store.boxFor(JellyfinServer::class.java)
         virtualFile = store.boxFor(VirtualFile::class.java)
     }
 
-    fun Box<JellyfinServer>.updateLibrarySel(
-        userId: Long,
-        lib: Map<String, String>
-    ): JellyfinServer {
-        val credential = credential.get(userId)
-        val copy = credential.copy(library = lib)
-        ObjectBox.credential.put(copy)
-        return copy
+    fun Box<VirtualFile>.update(libId: String, adder: suspend (Box<VirtualFile>) -> Unit) {
+        store.runInTx {
+            query {
+                equal(VirtualFile_.libId, libId, QueryBuilder.StringOrder.CASE_SENSITIVE)
+            }.remove()
+            runBlocking { adder(this@update) }
+        }
     }
 
     fun Box<VirtualFile>.findAllByLibId(libId: String): MutableMap<String, VirtualFile> {
@@ -37,4 +38,7 @@ object ObjectBox {
                 return it.find().associateBy { vf -> vf.documentId }.toMutableMap()
             }
     }
+
+    fun Box<VirtualFile>.countByServer(server: Long) =
+        query().equal(VirtualFile_.serverId, server).build().count()
 }

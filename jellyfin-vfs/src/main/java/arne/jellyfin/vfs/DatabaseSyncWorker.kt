@@ -6,7 +6,6 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import arne.hacks.fromMap
 import arne.hacks.logcat
-import arne.hacks.toMap
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 
@@ -15,11 +14,15 @@ class DatabaseSyncWorker(appContext: Context, workerParams: WorkerParameters) :
     override fun doWork(): Result {
         val request = fromMap<SyncRequest>(inputData.keyValueMap)
         val idList = if (request.all) {
-            ObjectBox.credential.all
+            ObjectBox.server.all
         } else {
-            val fromDB = ObjectBox.credential.get(request.id)
-            if (fromDB.size == request.id.size) {
-                return Result.failure()
+            val fromDB = ObjectBox.server.get(request.id.toList())
+            if (fromDB.size != request.id.size) {
+                return Result.failure(
+                    workDataOf(
+                        "reason" to "Some of the server info not found"
+                    )
+                )
             }
             fromDB
         }
@@ -38,23 +41,25 @@ class DatabaseSyncWorker(appContext: Context, workerParams: WorkerParameters) :
             return Result.failure()
         }
 
-        credential.forEachIndexed { index, c ->
+        /**
+         * -1 means pending
+         * [0, 100) means progress
+         * 100 means done
+         */
+        setProgressAsync(
+            workDataOf(
+                *credential.associate { it.serverId to -1 }.toList().toTypedArray()
+            )
+        )
+        credential.forEach { c ->
             logcat {
-                "syncing server: ${c.serverName} ${c.url}"
+                "syncing server: ${c.info}"
             }
 
             val sync = DatabaseSync(c.asAccessor(applicationContext))
-            sync.sync { step ->
-                val progress = Progress(
-                    total = credential.size,
-                    finished = index,
-                    current = 100 * step.current / step.total,
-                    id = c.id
-                )
+            sync.sync {
                 setProgressAsync(
-                    workDataOf(
-                        *progress.toMap().toList().toTypedArray()
-                    )
+                    workDataOf(c.serverId to it)
                 )
             }
         }
@@ -62,15 +67,9 @@ class DatabaseSyncWorker(appContext: Context, workerParams: WorkerParameters) :
         return Result.success()
     }
 
-    data class Progress(
-        val total: Int,
-        val finished: Int,
-        val current: Int,
-        val id: Long,
-    )
-
+    @Suppress("ArrayInDataClass")
     data class SyncRequest(
-        val all: Boolean = false,
-        val id: List<Long>
+        val id: Array<Long> = emptyArray(),
+        val all: Boolean = false
     )
 }
