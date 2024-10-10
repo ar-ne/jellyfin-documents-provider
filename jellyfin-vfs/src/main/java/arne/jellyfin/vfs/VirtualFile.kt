@@ -25,9 +25,12 @@ data class VirtualFile(
     @Index val libId: String,
     @Index val serverId: Long = 0,
     val mediaInfoId: Long = 0,
+    val powerampExtId: Long = 0
 ) {
     lateinit var server: ToOne<JellyfinServer>
     lateinit var mediaInfo: ToOne<MediaInfo>
+    val hasThumbnail: Boolean
+        get() = mediaInfo.target?.hasThumbnail ?: false
 
     companion object {
         fun BaseItemDto.toVirtualFile(credential: JellyfinServer): VirtualFile {

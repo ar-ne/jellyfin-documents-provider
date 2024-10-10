@@ -64,7 +64,7 @@
     },
     {
       "id": "3:8704842816978619835",
-      "lastPropertyId": "11:8288882662607813946",
+      "lastPropertyId": "12:4938864901373903136",
       "name": "VirtualFile",
       "properties": [
         {
@@ -127,13 +127,18 @@
           "type": 11,
           "flags": 520,
           "relationTarget": "JellyfinServer"
+        },
+        {
+          "id": "12:4938864901373903136",
+          "name": "powerampExtId",
+          "type": 6
         }
       ],
       "relations": []
     },
     {
       "id": "4:5579627283610275790",
-      "lastPropertyId": "8:4393412850763304826",
+      "lastPropertyId": "9:1884909290073716544",
       "name": "JellyfinServer",
       "properties": [
         {
@@ -158,11 +163,6 @@
           "type": 13
         },
         {
-          "id": "5:7864924661773186624",
-          "name": "uid",
-          "type": 9
-        },
-        {
           "id": "6:949111543241693468",
           "name": "username",
           "type": 9
@@ -173,16 +173,91 @@
           "type": 9
         },
         {
-          "id": "8:4393412850763304826",
-          "name": "serverId",
+          "id": "9:1884909290073716544",
+          "name": "uuid",
+          "indexId": "7:5377277949049896135",
+          "type": 9,
+          "flags": 2048
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "5:7677168464575468733",
+      "lastPropertyId": "2:5941295073305569031",
+      "name": "PowerampExtraInfo",
+      "properties": [
+        {
+          "id": "1:5762595013871806858",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:5941295073305569031",
+          "name": "lyrics",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "6:3205269629355322252",
+      "lastPropertyId": "8:5806106132501346203",
+      "name": "CacheInfo",
+      "properties": [
+        {
+          "id": "1:5738858400332585820",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6553502332171167077",
+          "name": "virtualFileId",
+          "indexId": "8:1553606431345993355",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "VirtualFile"
+        },
+        {
+          "id": "3:6401884902944854878",
+          "name": "vfDocId",
+          "indexId": "9:1933346194994739097",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:5145793886499414991",
+          "name": "localPath",
+          "type": 9
+        },
+        {
+          "id": "5:4473581939624063084",
+          "name": "localLength",
+          "type": 6
+        },
+        {
+          "id": "6:3439826740592486677",
+          "name": "bitrate",
+          "type": 5
+        },
+        {
+          "id": "7:1822954534353280473",
+          "name": "isCompleted",
+          "type": 1
+        },
+        {
+          "id": "8:5806106132501346203",
+          "name": "chunks",
           "type": 9
         }
       ],
       "relations": []
     }
   ],
-  "lastEntityId": "4:5579627283610275790",
-  "lastIndexId": "6:1693117259271809989",
+  "lastEntityId": "6:3205269629355322252",
+  "lastIndexId": "9:1933346194994739097",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,
@@ -202,7 +277,9 @@
     8369919902896546251,
     2806237006104245827,
     1078513588408160223,
-    5873054035952950978
+    5873054035952950978,
+    7864924661773186624,
+    4393412850763304826
   ],
   "retiredRelationUids": [],
   "version": 1

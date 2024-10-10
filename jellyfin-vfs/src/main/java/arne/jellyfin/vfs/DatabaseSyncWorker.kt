@@ -5,9 +5,9 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import arne.hacks.fromMap
-import arne.hacks.logcat
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
+import logcat.logcat
 
 class DatabaseSyncWorker(appContext: Context, workerParams: WorkerParameters) :
     Worker(appContext, workerParams) {
@@ -48,7 +48,7 @@ class DatabaseSyncWorker(appContext: Context, workerParams: WorkerParameters) :
          */
         setProgressAsync(
             workDataOf(
-                *credential.associate { it.serverId to -1 }.toList().toTypedArray()
+                *credential.associate { it.uuid to -1 }.toList().toTypedArray()
             )
         )
         credential.forEach { c ->
@@ -59,7 +59,7 @@ class DatabaseSyncWorker(appContext: Context, workerParams: WorkerParameters) :
             val sync = DatabaseSync(c.asAccessor(applicationContext))
             sync.sync {
                 setProgressAsync(
-                    workDataOf(c.serverId to it)
+                    workDataOf(c.uuid to it)
                 )
             }
         }

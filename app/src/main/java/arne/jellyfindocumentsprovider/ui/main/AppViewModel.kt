@@ -6,15 +6,15 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import arne.hacks.logcat
 import arne.hacks.toPropertyMap
 import arne.jellyfin.vfs.DatabaseSyncWorker
 import arne.jellyfin.vfs.DatabaseSyncWorker.SyncRequest
 import arne.jellyfin.vfs.ObjectBox
-import arne.jellyfin.vfs.ObjectBox.countByServer
+import arne.jellyfin.vfs.countByServer
 import arne.jellyfindocumentsprovider.ui.components.ServerListEntryInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import logcat.logcat
 
 class AppViewModel : ViewModel() {
     private var _loading = MutableStateFlow(true)
@@ -42,7 +42,7 @@ class AppViewModel : ViewModel() {
                 name = it.serverName,
                 url = it.url,
                 user = it.username,
-                id = it.serverId,
+                id = it.uuid,
                 itemCount = ObjectBox.virtualFile.countByServer(it.id),
                 libCount = it.library.size
             )

@@ -1,8 +1,10 @@
 package arne.jellyfin.vfs
 
-import arne.hacks.logcat
-import arne.jellyfin.vfs.ObjectBox.update
 import arne.jellyfin.vfs.VirtualFile.Companion.toVirtualFile
+import io.objectbox.kotlin.query
+import io.objectbox.query.QueryBuilder
+import kotlinx.coroutines.runBlocking
+import logcat.logcat
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 class DatabaseSync(
@@ -30,23 +32,28 @@ class DatabaseSync(
             logcat {
                 "[${accessor.credential.name}] syncing library: $libId"
             }
-            ObjectBox.virtualFile.update(libId) {
-                fetchItemsInBatches(
-                    libId = libId,
-                    batchSize = batchSize,
-                    totalItems = libTotal,
-                    onFetch = { items ->
-                        val virtualFiles =
-                            items.map { dto -> dto.toVirtualFile(accessor.credential) }
-                        it.put(virtualFiles)
+            with(ObjectBox.virtualFile) {
+                ObjectBox.store.runInTx {
+                    query {
+                        equal(VirtualFile_.libId, libId, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                    }.remove()
+                    runBlocking {
+                        fetchItemsInBatches(
+                            libId = libId,
+                            batchSize = batchSize,
+                            totalItems = libTotal,
+                            onFetch = { items ->
+                                put(items.map { it.toVirtualFile(accessor.credential) })
 
-                        proceed += items.size
-                        onProgress((100 * proceed / total))
-                        logcat {
-                            "[${accessor.credential.name}] syncing library: $libId ... $proceed/$total"
-                        }
+                                proceed += items.size
+                                onProgress((100 * proceed / total))
+                                logcat {
+                                    "[${accessor.credential.name}] syncing library: $libId ... $proceed/$total"
+                                }
+                            }
+                        )
                     }
-                )
+                }
             }
         }
     }

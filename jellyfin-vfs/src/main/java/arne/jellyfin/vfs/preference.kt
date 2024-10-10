@@ -1,5 +1,6 @@
-package arne.hacks
+package arne.jellyfin.vfs
 
+import android.content.SharedPreferences
 import logcat.LogPriority
 
 enum class PrefKeys(private val defaultEnum: Enum<*>, val asEnum: (name: String) -> Any) {
@@ -29,6 +30,8 @@ enum class BitrateLimitType(
 enum class BitrateLimits(private val bitrate: Int) {
     K64(64), K128(128), K256(256), K320(320);
 
+    val bps
+        get() = bitrate * 1000
     val readable
         get() = "$bitrate Kbps"
     val description
@@ -39,3 +42,10 @@ enum class BitrateLimits(private val bitrate: Int) {
 enum class WaveType(val description: String) {
     REAL("Use real wave generated from file"), FAKE("Generate random waves"), NONE("No waves")
 }
+
+
+fun SharedPreferences.getString(key: PrefKeys): String =
+    this.getString(key.name, null) ?: key.defaultVal
+
+@Suppress("UNCHECKED_CAST")
+fun <T> SharedPreferences.getEnum(key: PrefKeys) = key.asEnum(this.getString(key)) as T

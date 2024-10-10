@@ -1,7 +1,5 @@
 package arne.hacks
 
-import android.content.SharedPreferences
-
 
 /**
  * typically used for get a shortened version of uuid (8-char)
@@ -21,6 +19,7 @@ val Long.readable: String
  */
 val Int.readable: String
     get() = convertBytesToHumanReadable(this.toLong())
+
 val Any.TAG: String
     get() {
         return if (!javaClass.isAnonymousClass) {
@@ -50,9 +49,3 @@ fun convertBytesToHumanReadable(bytes: Long): String {
 
     return "%.2f ${units[unitIndex]}".format(value)
 }
-
-fun SharedPreferences.getString(key: PrefKeys): String =
-    this.getString(key.name, null) ?: key.defaultVal
-
-@Suppress("UNCHECKED_CAST")
-fun <T> SharedPreferences.getEnum(key: PrefKeys) = key.asEnum(this.getString(key)) as T

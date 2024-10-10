@@ -10,16 +10,17 @@ kotlinxSerializationJson = "1.7.3"
 material = "1.12.0"
 lifecycleRuntimeKtx = "2.8.6"
 activityCompose = "1.9.2"
-composeBom = "2024.09.02"
+composeBom = "2024.09.03"
 legacySupportV4 = "1.0.0"
 lifecycleLivedataKtx = "2.8.6"
 lifecycleViewmodelKtx = "2.8.6"
-fragmentKtx = "1.8.3"
-navigationCompose = "2.8.1"
+fragmentKtx = "1.8.4"
+navigationCompose = "2.8.2"
 objectboxGradlePlugin = "4.0.2"
 logcat = "0.1"
 jellyfinCore = "1.5.5"
-runtimeLivedata = "1.7.2"
+powerampapi = "2a4267729d"
+runtimeLivedata = "1.7.3"
 workRuntimeKtx = "2.9.1"
 
 [libraries]
@@ -51,6 +52,7 @@ logcat = { module = "com.squareup.logcat:logcat", version.ref = "logcat" }
 jellyfin-core = { module = "org.jellyfin.sdk:jellyfin-core", version.ref = "jellyfinCore" }
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
+powerampapi = { module = "com.github.ar-ne:powerampapi", version.ref = "powerampapi" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

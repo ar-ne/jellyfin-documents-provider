@@ -1,10 +1,13 @@
 package arne.jellyfin.vfs
 
 import android.content.Context
-import arne.hacks.logcat
 import logcat.LogPriority
+import logcat.logcat
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.extensions.audioApi
+import org.jellyfin.sdk.api.client.extensions.imageApi
 import org.jellyfin.sdk.api.client.extensions.itemsApi
+import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.userViewsApi
@@ -20,7 +23,7 @@ import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.request.GetItemsRequest
 
-class JellyfinAccessor(private val ctx: Context, val credential: JellyfinServer) {
+class JellyfinAccessor(ctx: Context, val credential: JellyfinServer) {
     private val api: ApiClient = createJellyfin(ctx).createApi(
         baseUrl = credential.url,
         accessToken = credential.token,
@@ -69,6 +72,31 @@ class JellyfinAccessor(private val ctx: Context, val credential: JellyfinServer)
         }
     }
 
+    fun resolveThumbnailURL(id: DocId): String? {
+        return when (id.type) {
+            DocId.DocType.FILE,
+            DocId.DocType.LIBRARY
+            -> api.imageApi.getItemImageUrl(
+                UUID.fromString(id.id),
+                ImageType.THUMB,
+            )
+
+            else -> null
+        }
+    }
+
+    /**
+     * get the audio url
+     * @param bps audio bitrate, when present, it will return from [ApiClient.audioApi]
+     * @param id the item id
+     */
+    fun resolveAudioItemURL(id: String, bps: Int? = null): String {
+        val uuid = UUID.fromString(id)
+        return bps?.let {
+            api.audioApi.getAudioStreamUrl(uuid, audioBitRate = bps)
+        } ?: api.libraryApi.getFileUrl(uuid)
+    }
+
 
     data class ServerInfo(
         var url: String = "",
@@ -101,11 +129,10 @@ class JellyfinAccessor(private val ctx: Context, val credential: JellyfinServer)
                 return JellyfinServer(
                     url = url,
                     serverName = serverPublicInfo.serverName ?: "Unknown Server",
-                    serverId = authResult.serverId!!,
                     library = mapOf(),
-                    uid = authResult.user!!.id.toString(),
                     token = authResult.accessToken!!,
-                    username = authResult.user!!.name!!
+                    username = authResult.user!!.name!!,
+                    uuid = authResult.user!!.id.toString()
                 )
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR) {
