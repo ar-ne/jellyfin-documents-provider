@@ -14,12 +14,12 @@ data class CacheInfo(
     val localLength: Long = 0,
     val bitrate: Int = -1,
     val isCompleted: Boolean = false,
-    @Convert(converter = CacheChunks.ObjectBoxConverter::class, dbType = String::class)
+    @Convert(converter = CacheChunksConverter::class, dbType = String::class)
     val chunks: CacheChunks = CacheChunks(),
 
     val virtualFileId: Long = 0,
 ) {
-    private lateinit var virtualFile: ToOne<VirtualFile>
+    lateinit var virtualFile: ToOne<VirtualFile>
     val isComplete
         get() = isCompleted or chunks.noGapsIn(0 until virtualFile.target.size)
 }

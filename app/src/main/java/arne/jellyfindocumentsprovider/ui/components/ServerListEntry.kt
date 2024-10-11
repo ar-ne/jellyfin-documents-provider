@@ -45,9 +45,9 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import arne.hacks.logcat
 import arne.jellyfin.vfs.ObjectBox
 import kotlinx.coroutines.launch
+import logcat.logcat
 import kotlin.math.roundToInt
 
 data class ServerListEntryInfo(

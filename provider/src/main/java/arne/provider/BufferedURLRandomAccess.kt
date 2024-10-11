@@ -5,6 +5,7 @@ import arne.hacks.readable
 import arne.hacks.short
 import arne.jellyfin.vfs.CacheChunks
 import arne.jellyfin.vfs.CacheInfo
+import arne.jellyfin.vfs.FileStreamFactory
 import arne.jellyfin.vfs.ObjectBox
 import arne.jellyfin.vfs.VirtualFile
 import arne.jellyfin.vfs.getOrCreate
@@ -14,25 +15,23 @@ import logcat.LogPriority
 import logcat.logcat
 import java.io.Closeable
 import java.io.File
-import java.io.IOException
 import java.io.RandomAccessFile
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import kotlin.math.min
 
 /**
- * TODO: add the ability to limit buffer file size
+ * TODO: rewrite
  */
 class BufferedURLRandomAccess(
     val vf: VirtualFile,
-    private val url: URL,
     bufferSizeKB: Int = 128,
     private val bufferFile: File,
     private val maxRetry: Int = 3,
-    private val bitrate: Int = -1
+    private val bitrate: Int = -1,
+    private val streamFactory: FileStreamFactory
 ) : URLRandomAccess(), CoroutineScope, Closeable {
 
     override val coroutineContext = Dispatchers.IO + SupervisorJob()
@@ -66,7 +65,8 @@ class BufferedURLRandomAccess(
             currentPosition = cacheInfo.localLength
             urlContentLengthLong = cacheInfo.localLength
         } else {
-            urlContentLengthLong = getURLContentLengthLong()
+            // FIXME
+            urlContentLengthLong = 0
             if (bufferedRanges.isNotEmpty()) {
                 requestData(bufferedRanges.first().first)
             } else {
@@ -147,8 +147,7 @@ class BufferedURLRandomAccess(
 
         if (bufferedRanges.noGapsIn(from..urlContentLengthLong)) {
             logcat(
-                TAG,
-                LogPriority.VERBOSE
+                TAG, LogPriority.VERBOSE
             ) { "needRequest(${docId.short}): noop cause no gap in between [$from..$urlContentLengthLong]." }
             return false
         }
@@ -185,28 +184,35 @@ class BufferedURLRandomAccess(
         }
         try {
             logcat(LogPriority.INFO) { "requestDataSingleThread(${docId.short}): start new request from $from, unknownLength=$unknownLength" }
-            val connection = url.openConnection() as HttpURLConnection
-            connection.setRequestProperty("Range", "bytes=${from}-$urlContentLengthLong")
-
-            connection.inputStream.use { inputStream ->
+            runBlocking {
+                val stream = streamFactory(from, null)
                 RandomAccessFile(bufferFile, "rws").use { outputStream ->
-
-                    var bytesRead: Int
-                    val buffer = ByteArray(8 * 1024)
                     var accumulatedRead = 0L
+                    outputStream.seek(from)
 
-                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                        outputStream.seek(from + totalBytesRead)
-                        outputStream.write(buffer, 0, bytesRead)
+                    val buffer = ByteArray(8 * 1024)
+                    while (true) {
+                        val remain = stream.length - from - accumulatedRead
+                        if (remain == 0L) break
+                        val readLength = min(
+                            remain, buffer.size.toLong()
+                        ).toInt()
+                        logcat {
+                            "requestDataSingleThread(${docId.short}): readLength=$readLength accumulatedRead=$accumulatedRead"
+                        }
+                        stream.channel.readFully(buffer, 0, readLength)
+                        outputStream.write(buffer, 0, readLength)
 
-                        accumulatedRead += bytesRead
-                        totalBytesRead += bytesRead
+                        accumulatedRead += readLength
+                        totalBytesRead += readLength
                         currentPosition = from + totalBytesRead
 
                         if (accumulatedRead >= minimalBufferLength) {
                             updateBufferedRange()
                             accumulatedRead = 0
                         }
+
+                        if (remain < buffer.size) break
                     }
 
                     // bytesRead == -1, EOF of stream
@@ -214,6 +220,7 @@ class BufferedURLRandomAccess(
                     isCompleted = true
                 }
             }
+
             updateBufferedRange()
         } catch (e: CancellationException) {
             if (e.cause!!.instanceOf(CancelCauseNewRangeException::class)) {
@@ -286,12 +293,6 @@ class BufferedURLRandomAccess(
         saveCacheInfo()
         currentJob?.cancel(cause = CancelCauseCloseException())
         coroutineContext.cancelChildren()
-    }
-
-    @Throws(IOException::class)
-    fun getURLContentLengthLong(): Long {
-        val connection = url.openConnection()
-        return connection.contentLengthLong
     }
 
     private val unknownLength

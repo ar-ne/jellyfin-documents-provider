@@ -1,16 +1,55 @@
 package arne.jellyfin.vfs
 
+import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import androidx.core.app.NotificationCompat
+import androidx.work.ForegroundInfo
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import androidx.work.impl.utils.futures.SettableFuture
 import androidx.work.workDataOf
 import arne.hacks.fromMap
+import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 import logcat.logcat
 
 class DatabaseSyncWorker(appContext: Context, workerParams: WorkerParameters) :
     Worker(appContext, workerParams) {
+    companion object {
+        const val NOTIFICATION_CHANNEL_ID = "DatabaseSyncWorker"
+    }
+
+    @SuppressLint("RestrictedApi")
+    override fun getForegroundInfoAsync(): ListenableFuture<ForegroundInfo> {
+        val notificationManager =
+            applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val channel = NotificationChannel(
+            NOTIFICATION_CHANNEL_ID,
+            "Sync Database",
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        notificationManager.createNotificationChannel(channel)
+
+        val notification = NotificationCompat.Builder(applicationContext, NOTIFICATION_CHANNEL_ID)
+            .setSmallIcon(arne.jfdp.hacks.R.drawable.ic_launcher_foreground)
+            .setOngoing(true)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setContentTitle("Jellyfin VFS")
+            .setLocalOnly(true)
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET)
+            .setContentText("Updating widget")
+            .build()
+        return SettableFuture.create<ForegroundInfo?>().apply {
+            set(ForegroundInfo(1, notification))
+        }
+    }
+
     override fun doWork(): Result {
         val request = fromMap<SyncRequest>(inputData.keyValueMap)
         val idList = if (request.all) {

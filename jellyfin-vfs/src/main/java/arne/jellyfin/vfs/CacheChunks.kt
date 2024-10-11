@@ -66,22 +66,20 @@ class CacheChunks(
         merge()
         return innerList.any { it.contains(range.first) && it.contains(range.last) }
     }
-
-    class ObjectBoxConverter : PropertyConverter<CacheChunks, String> {
-        override fun convertToEntityProperty(databaseValue: String?): CacheChunks {
-            return CacheChunks(innerList = databaseValue?.split(';')?.filter { it.isNotBlank() }
-                ?.map {
-                    val split = it.split(',').map { s -> s.trim().toLong() }
-                    split[0]..split[1]
-                }?.toMutableList() ?: mutableListOf())
-        }
-
-        override fun convertToDatabaseValue(cc: CacheChunks?): String {
-            return cc?.joinToString(";") {
-                it.first.toString() + "," + it.last
-            } ?: ""
-        }
-
-    }
 }
 
+class CacheChunksConverter : PropertyConverter<CacheChunks, String> {
+    override fun convertToEntityProperty(databaseValue: String?): CacheChunks {
+        return CacheChunks(innerList = databaseValue?.split(';')?.filter { it.isNotBlank() }
+            ?.map {
+                val split = it.split(',').map { s -> s.trim().toLong() }
+                split[0]..split[1]
+            }?.toMutableList() ?: mutableListOf())
+    }
+
+    override fun convertToDatabaseValue(cc: CacheChunks?): String {
+        return cc?.joinToString(";") {
+            it.first.toString() + "," + it.last
+        } ?: ""
+    }
+}

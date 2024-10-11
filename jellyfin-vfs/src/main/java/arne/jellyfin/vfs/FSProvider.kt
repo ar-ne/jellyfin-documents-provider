@@ -2,12 +2,14 @@ package arne.jellyfin.vfs
 
 import android.content.Context
 import android.database.MatrixCursor
+import android.graphics.Point
 import android.provider.DocumentsContract.Document
 import android.provider.DocumentsContract.Root
 import android.provider.MediaStore.Audio.AudioColumns
 import arne.jellyfin.vfs.DocId.DocType
 import com.maxmpz.poweramp.player.TrackProviderConsts
 import com.maxmpz.poweramp.player.TrackProviderHelper
+import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 import logcat.logcat
@@ -87,15 +89,15 @@ object FSProvider {
         }
     }
 
-    fun Context.getThumbnailURL(id: DocId): String? {
+    fun Context.streamThumbnail(id: DocId, sizeHint: Point?): ByteReadChannel? {
         return with(ObjectBox) {
             when (id.type) {
                 DocType.FILE -> {
                     val vf = virtualFile.findByDocumentId(id.id)
-                    if (vf.hasThumbnail) {
-                        val server = vf.server.target.asAccessor(this@getThumbnailURL)
-                        runBlocking { server.resolveThumbnailURL(id) }
-                    } else null
+                    vf.thumbnailQueryId?.let {
+                        val server = vf.server.target.asAccessor(this@streamThumbnail)
+                        runBlocking { server.streamThumbnail(it, sizeHint?.x, sizeHint?.y) }
+                    }
                 }
 
                 else -> null
@@ -103,13 +105,16 @@ object FSProvider {
         }
     }
 
-    fun Context.getAudioStreamingURL(id: DocId, bps: Int?): Triple<String, VirtualFile, Int>? {
+    fun Context.getAudioStreamFactory(
+        id: DocId,
+        bps: Int?
+    ): Triple<FileStreamFactory, VirtualFile, Int>? {
         return with(ObjectBox) {
             if (id.type == DocType.FILE) {
                 val vf = virtualFile.findByDocumentId(id.id)
-                val server = vf.server.target.asAccessor(this@getAudioStreamingURL)
-                val url = runBlocking { server.resolveAudioItemURL(id.id, bps) }
-                return Triple(url, vf, bps ?: -1)
+                val server = vf.server.target.asAccessor(this@getAudioStreamFactory)
+                val fsf = runBlocking { server.getAudioFileStreamFactory(id) }
+                return Triple(fsf, vf, bps ?: -1)
             } else null
         }
     }

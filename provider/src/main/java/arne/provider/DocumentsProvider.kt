@@ -19,21 +19,22 @@ import arne.hacks.short
 import arne.jellyfin.vfs.BitrateLimitType
 import arne.jellyfin.vfs.BitrateLimits
 import arne.jellyfin.vfs.FSProvider
-import arne.jellyfin.vfs.FSProvider.getAudioStreamingURL
-import arne.jellyfin.vfs.FSProvider.getThumbnailURL
+import arne.jellyfin.vfs.FSProvider.getAudioStreamFactory
+import arne.jellyfin.vfs.FSProvider.streamThumbnail
 import arne.jellyfin.vfs.ObjectBox
 import arne.jellyfin.vfs.PrefKeys
 import arne.jellyfin.vfs.WaveType
 import arne.jellyfin.vfs.asAndroidMatrixCursor
 import arne.jellyfin.vfs.getEnum
 import arne.jellyfin.vfs.toDocId
+import io.ktor.util.moveToByteArray
+import io.ktor.utils.io.jvm.nio.copyTo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import logcat.LogPriority
 import logcat.logcat
 import java.io.FileNotFoundException
-import java.net.URL
 
 
 class DocumentsProvider() : android.provider.DocumentsProvider() {
@@ -111,20 +112,20 @@ class DocumentsProvider() : android.provider.DocumentsProvider() {
         signal: CancellationSignal?
     ): AssetFileDescriptor? {
         logcat { "openDocumentThumbnail(${documentId.short}): sizeHint = $sizeHint" }
-        return requireContext().getThumbnailURL(documentId.toDocId())?.let { url ->
-            val conn = URL(url).openConnection()
+        return providerContext.streamThumbnail(documentId.toDocId(), sizeHint)?.let { stream ->
+            val total = stream.availableForRead
             val (read, write) = ParcelFileDescriptor.createPipe()
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     ParcelFileDescriptor.AutoCloseOutputStream(write).use { output ->
-                        conn.getInputStream().use { input -> input.copyTo(output) }
+                        stream.copyTo(output.channel)
                     }
                 } catch (e: Exception) {
                     // Handle any exceptions that occur while downloading the thumbnail
-                    logcat(LogPriority.ERROR) { "openDocumentThumbnail: failed to get thumbnail file=${documentId.short} url=$url \n${e.stackTraceToString()}" }
+                    logcat(LogPriority.ERROR) { "openDocumentThumbnail: failed to get thumbnail file=${documentId.short} \n${e.stackTraceToString()}" }
                 }
             }
-            AssetFileDescriptor(read, 0, conn.contentLengthLong)
+            AssetFileDescriptor(read, 0, total.toLong())
         }
     }
 
@@ -133,14 +134,14 @@ class DocumentsProvider() : android.provider.DocumentsProvider() {
         documentId: String, mode: String?, signal: CancellationSignal?
     ): ParcelFileDescriptor? {
         logcat { "openDocument(): documentId = $documentId, mode = $mode" }
-        return requireContext().getAudioStreamingURL(
+        return providerContext.getAudioStreamFactory(
             documentId.toDocId(), when (bitrateLimitType) {
                 BitrateLimitType.NONE -> null
                 BitrateLimitType.CELL,
                 BitrateLimitType.ALL -> bitrateLimits.bps
             }
-        )?.let { (url, vf, bps) ->
-            RandomAccessBucket.proxy(url, vf, bps).let { proxy ->
+        )?.let { (fsf, vf, bps) ->
+            RandomAccessBucket.proxy(fsf, vf, bps).let { proxy ->
                 storageManager.openProxyFileDescriptor(
                     ParcelFileDescriptor.parseMode(mode),
                     proxy,

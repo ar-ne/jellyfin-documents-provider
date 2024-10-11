@@ -1,9 +1,11 @@
 package arne.jellyfin.vfs
 
 import android.content.Context
+import io.ktor.utils.io.ByteReadChannel
 import logcat.LogPriority
 import logcat.logcat
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.Response
 import org.jellyfin.sdk.api.client.extensions.audioApi
 import org.jellyfin.sdk.api.client.extensions.imageApi
 import org.jellyfin.sdk.api.client.extensions.itemsApi
@@ -63,7 +65,7 @@ class JellyfinAccessor(ctx: Context, val credential: JellyfinServer) {
                     imageTypeLimit = 1,
                     enableImageTypes = setOf(ImageType.PRIMARY),
                     limit = limit,
-                    parentId = UUID.fromString(parentId)
+                    parentId = parentId.UUID()
                 )
             ).content
         } catch (e: Exception) {
@@ -72,30 +74,31 @@ class JellyfinAccessor(ctx: Context, val credential: JellyfinServer) {
         }
     }
 
-    fun resolveThumbnailURL(id: DocId): String? {
-        return when (id.type) {
-            DocId.DocType.FILE,
-            DocId.DocType.LIBRARY
-            -> api.imageApi.getItemImageUrl(
-                UUID.fromString(id.id),
-                ImageType.THUMB,
-            )
+    suspend fun streamThumbnail(id: String, w: Int? = 250, h: Int? = 250) = api.imageApi.getItemImage(
+        id.UUID(),
+        ImageType.PRIMARY,
+        fillWidth = w,
+        fillHeight = h,
+        quality = 96
+    ).content
 
-            else -> null
+
+    suspend fun getStreamingAudioStreamFactory(
+        id: DocId,
+        bps: Int,
+    ): FileStreamFactory =
+        { start: Long, _: Long? ->
+            api.audioApi.getAudioStream(
+                id.UUID(),
+                startTimeTicks = start,
+                audioBitRate = bps
+            ).toStream()
         }
-    }
 
-    /**
-     * get the audio url
-     * @param bps audio bitrate, when present, it will return from [ApiClient.audioApi]
-     * @param id the item id
-     */
-    fun resolveAudioItemURL(id: String, bps: Int? = null): String {
-        val uuid = UUID.fromString(id)
-        return bps?.let {
-            api.audioApi.getAudioStreamUrl(uuid, audioBitRate = bps)
-        } ?: api.libraryApi.getFileUrl(uuid)
-    }
+    fun getAudioFileStreamFactory(id: DocId): FileStreamFactory =
+        { _, _ ->
+            api.libraryApi.getFile(id.UUID()).toStream()
+        }
 
 
     data class ServerInfo(
@@ -142,4 +145,21 @@ class JellyfinAccessor(ctx: Context, val credential: JellyfinServer) {
             throw IllegalArgumentException("unable to login to server $url")
         }
     }
+
+    data class Stream(
+        val channel: ByteReadChannel,
+        val length: Long
+    )
+
+    private fun Response<ByteReadChannel>.toStream(): Stream {
+        logcat(LogPriority.DEBUG) {
+            "response status=${this.status}, headers: ${this.headers}"
+        }
+        val length = headers["content-length"]?.first()?.toLong() ?: -1
+        return Stream(content, length)
+    }
 }
+
+private fun DocId.UUID(): UUID = UUID.fromString(id)
+private fun String.UUID(): UUID = UUID.fromString(this)
+typealias FileStreamFactory = suspend (start: Long, end: Long?) -> JellyfinAccessor.Stream

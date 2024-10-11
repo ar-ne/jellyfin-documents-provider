@@ -29,8 +29,8 @@ data class VirtualFile(
 ) {
     lateinit var server: ToOne<JellyfinServer>
     lateinit var mediaInfo: ToOne<MediaInfo>
-    val hasThumbnail: Boolean
-        get() = mediaInfo.target?.hasThumbnail ?: false
+    val thumbnailQueryId
+        get() = mediaInfo.target?.albumId
 
     companion object {
         fun BaseItemDto.toVirtualFile(credential: JellyfinServer): VirtualFile {
@@ -38,7 +38,7 @@ data class VirtualFile(
             return VirtualFile(
                 name = name!!,
                 documentId = id.toString(),
-                mimeType = getMimeTypeFromExtension(mediaSource.container!!)!!,
+                mimeType = mediaSource.container.toMIMEType(),
                 displayName = name!!,
                 lastModified = 1000 * dateCreated?.toEpochSecond(ZoneOffset.UTC)!!,
                 size = mediaSource.size ?: 0,
@@ -50,11 +50,13 @@ data class VirtualFile(
         }
 
         private val mimeTypeCache = HashMap<String, String>()
-        private fun getMimeTypeFromExtension(extension: String): String? {
-            return mimeTypeCache.getOrPut(extension) {
+
+        private fun String?.toMIMEType(): String {
+            if (this == null) return "application/octet-stream"
+            return mimeTypeCache.getOrPut(this) {
                 // Get the MIME type for the extension using the MimeTypeMap class
-                val mimeTypeMap = MimeTypeMap.getSingleton()
-                return mimeTypeMap.getMimeTypeFromExtension(extension)
+                return@getOrPut MimeTypeMap.getSingleton().getMimeTypeFromExtension(this)
+                    ?: "application/octet-stream"
             }
         }
     }

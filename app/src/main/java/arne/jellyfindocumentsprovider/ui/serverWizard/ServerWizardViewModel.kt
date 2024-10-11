@@ -3,7 +3,6 @@ package arne.jellyfindocumentsprovider.ui.serverWizard
 import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
-import arne.hacks.logcat
 import arne.jellyfin.vfs.JellyfinAccessor
 import arne.jellyfin.vfs.JellyfinServer
 import arne.jellyfin.vfs.ObjectBox
@@ -14,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import logcat.LogPriority
+import logcat.logcat
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 class ServerWizardViewModel(application: Application) : AndroidViewModel(application) {

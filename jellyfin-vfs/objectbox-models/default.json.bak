@@ -64,7 +64,7 @@
     },
     {
       "id": "3:8704842816978619835",
-      "lastPropertyId": "11:8288882662607813946",
+      "lastPropertyId": "12:4938864901373903136",
       "name": "VirtualFile",
       "properties": [
         {
@@ -127,6 +127,11 @@
           "type": 11,
           "flags": 520,
           "relationTarget": "JellyfinServer"
+        },
+        {
+          "id": "12:4938864901373903136",
+          "name": "powerampExtId",
+          "type": 6
         }
       ],
       "relations": []

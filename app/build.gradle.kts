@@ -81,5 +81,6 @@ dependencies {
 
     implementation(project(":jellyfin-vfs"))
     implementation(project(":hacks"))
+    implementation(project(":provider"))
     implementation(libs.kotlinx.serialization.json)
 }
