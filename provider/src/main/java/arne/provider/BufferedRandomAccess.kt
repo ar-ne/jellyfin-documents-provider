@@ -25,14 +25,14 @@ import kotlin.math.min
 /**
  * TODO: rewrite
  */
-class BufferedURLRandomAccess(
+class BufferedRandomAccess(
     val vf: VirtualFile,
     bufferSizeKB: Int = 128,
     private val bufferFile: File,
     private val maxRetry: Int = 3,
     private val bitrate: Int = -1,
     private val streamFactory: FileStreamFactory
-) : URLRandomAccess(), CoroutineScope, Closeable {
+) : RandomAccess(), CoroutineScope, Closeable {
 
     override val coroutineContext = Dispatchers.IO + SupervisorJob()
     private val docId = vf.documentId
@@ -176,7 +176,6 @@ class BufferedURLRandomAccess(
         fun updateBufferedRange() {
             if (totalBytesRead != 0L) {
                 bufferedRanges.add(from until from + totalBytesRead)
-                bufferedRanges.merge()
                 lock.withLock {
                     condition.signalAll()
                 }

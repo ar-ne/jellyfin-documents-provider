@@ -27,8 +27,7 @@ import arne.jellyfin.vfs.WaveType
 import arne.jellyfin.vfs.asAndroidMatrixCursor
 import arne.jellyfin.vfs.getEnum
 import arne.jellyfin.vfs.toDocId
-import io.ktor.util.moveToByteArray
-import io.ktor.utils.io.jvm.nio.copyTo
+import io.ktor.utils.io.jvm.javaio.copyTo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -113,19 +112,19 @@ class DocumentsProvider() : android.provider.DocumentsProvider() {
     ): AssetFileDescriptor? {
         logcat { "openDocumentThumbnail(${documentId.short}): sizeHint = $sizeHint" }
         return providerContext.streamThumbnail(documentId.toDocId(), sizeHint)?.let { stream ->
-            val total = stream.availableForRead
+            val total = stream.length
             val (read, write) = ParcelFileDescriptor.createPipe()
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     ParcelFileDescriptor.AutoCloseOutputStream(write).use { output ->
-                        stream.copyTo(output.channel)
+                        stream.channel.copyTo(output)
                     }
                 } catch (e: Exception) {
                     // Handle any exceptions that occur while downloading the thumbnail
                     logcat(LogPriority.ERROR) { "openDocumentThumbnail: failed to get thumbnail file=${documentId.short} \n${e.stackTraceToString()}" }
                 }
             }
-            AssetFileDescriptor(read, 0, total.toLong())
+            AssetFileDescriptor(read, 0, total)
         }
     }
 

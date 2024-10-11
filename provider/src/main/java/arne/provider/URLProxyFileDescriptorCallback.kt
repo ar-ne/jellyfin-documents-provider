@@ -6,7 +6,7 @@ import logcat.LogPriority
 import logcat.logcat
 
 class URLProxyFileDescriptorCallback(
-    private val ra: URLRandomAccess,
+    private val ra: RandomAccess,
     private val release: () -> Unit
 ) : ProxyFileDescriptorCallback() {
     override fun onGetSize(): Long {

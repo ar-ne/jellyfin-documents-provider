@@ -9,7 +9,6 @@ import android.provider.MediaStore.Audio.AudioColumns
 import arne.jellyfin.vfs.DocId.DocType
 import com.maxmpz.poweramp.player.TrackProviderConsts
 import com.maxmpz.poweramp.player.TrackProviderHelper
-import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 import logcat.logcat
@@ -21,7 +20,7 @@ object FSProvider {
             "FSProvider.getRoots(): amount of servers = $servers"
         }
         val roots = servers.map {
-            val idInProvider = DocId(DocType.ROOT, it.uuid).toTypedId()
+            val idInProvider = DocId(DocType.root, it.uuid).toTypedId()
             return@map mapOf(
                 Root.COLUMN_ROOT_ID to idInProvider,
                 Root.COLUMN_DOCUMENT_ID to idInProvider,
@@ -45,13 +44,13 @@ object FSProvider {
 
     fun isChildDocument(parent: DocId, document: DocId): Boolean {
         return when (document.type) {
-            DocType.LIBRARY ->
+            DocType.lib ->
                 ObjectBox.server.findByUUID(parent.id).library.containsKey(document.id)
 
-            DocType.FILE -> {
-                if (parent.type == DocType.ROOT) {
+            DocType.file -> {
+                if (parent.type == DocType.root) {
                     // if it checking from root directory
-                    isChildDocument(parent, DocId(DocType.LIBRARY, document.id))
+                    isChildDocument(parent, DocId(DocType.lib, document.id))
                 } else {
                     val vf = ObjectBox.virtualFile.findByDocumentId(document.id)
                     vf.libId == parent.id
@@ -69,9 +68,9 @@ object FSProvider {
         }
         return with(ObjectBox) {
             when (parent.type) {
-                DocType.ROOT -> server.findByUUID(parent.id).getLibrariesAsProjection()
+                DocType.root -> server.findByUUID(parent.id).getLibrariesAsProjection()
 
-                DocType.LIBRARY -> virtualFile.findAllByLibId(parent.id).map {
+                DocType.lib -> virtualFile.findAllByLibId(parent.id).map {
                     it.asProjection() + it.mediaInfo.target.asProjection()
                 }
 
@@ -82,17 +81,17 @@ object FSProvider {
 
     fun getOne(id: DocId) = with(ObjectBox) {
         when (id.type) {
-            DocType.ROOT -> server.findByUUID(id.id).getLibrariesAsProjection()
-            DocType.LIBRARY -> server.findByLibraryId(id.id).getLibrariesAsProjection()
-            DocType.FILE -> listOf(virtualFile.findByDocumentId(id.id).asProjection())
+            DocType.root -> server.findByUUID(id.id).getLibrariesAsProjection()
+            DocType.lib -> server.findByLibraryId(id.id).getLibrariesAsProjection()
+            DocType.file -> listOf(virtualFile.findByDocumentId(id.id).asProjection())
             else -> TODO("Not yet implemented")
         }
     }
 
-    fun Context.streamThumbnail(id: DocId, sizeHint: Point?): ByteReadChannel? {
+    fun Context.streamThumbnail(id: DocId, sizeHint: Point?): JellyfinAccessor.Stream? {
         return with(ObjectBox) {
             when (id.type) {
-                DocType.FILE -> {
+                DocType.file -> {
                     val vf = virtualFile.findByDocumentId(id.id)
                     vf.thumbnailQueryId?.let {
                         val server = vf.server.target.asAccessor(this@streamThumbnail)
@@ -110,7 +109,7 @@ object FSProvider {
         bps: Int?
     ): Triple<FileStreamFactory, VirtualFile, Int>? {
         return with(ObjectBox) {
-            if (id.type == DocType.FILE) {
+            if (id.type == DocType.file) {
                 val vf = virtualFile.findByDocumentId(id.id)
                 val server = vf.server.target.asAccessor(this@getAudioStreamFactory)
                 val fsf = runBlocking { server.getAudioFileStreamFactory(id) }
@@ -134,7 +133,7 @@ fun VirtualFile.asProjection(): Map<String, Any> {
     val flag = if (mediaInfo.target.hasThumbnail)
         Document.FLAG_SUPPORTS_THUMBNAIL else 0
     return mapOf(
-        Document.COLUMN_DOCUMENT_ID to documentId.toTypedId(DocType.FILE),
+        Document.COLUMN_DOCUMENT_ID to documentId.toTypedId(DocType.file),
         Document.COLUMN_DISPLAY_NAME to name,
         Document.COLUMN_SIZE to size,
         Document.COLUMN_MIME_TYPE to mimeType,
@@ -147,7 +146,7 @@ fun VirtualFile.asProjection(): Map<String, Any> {
 fun JellyfinServer.getLibrariesAsProjection() = library.entries
     .map { (id, name) ->
         mapOf(
-            Document.COLUMN_DOCUMENT_ID to DocId(DocType.LIBRARY, id).toTypedId(),
+            Document.COLUMN_DOCUMENT_ID to DocId(DocType.lib, id).toTypedId(),
             Document.COLUMN_DISPLAY_NAME to name,
             Document.COLUMN_MIME_TYPE to Document.MIME_TYPE_DIR,
             Document.COLUMN_SIZE to 0,

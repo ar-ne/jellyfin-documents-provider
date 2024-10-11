@@ -43,6 +43,9 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 
     api(libs.jellyfin.core)
-    implementation(project(":hacks"))
     api(libs.powerampapi)
+    implementation(project(":hacks"))
+
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
 }

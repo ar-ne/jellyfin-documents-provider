@@ -2,7 +2,7 @@ package arne.jellyfin.vfs
 
 import io.objectbox.converter.PropertyConverter
 
-class CacheChunks(
+open class CacheChunks(
     private val comparator: Comparator<LongRange> = compareBy { it.first },
     private val innerList: MutableList<LongRange> = mutableListOf(),
 ) : List<LongRange> by innerList {
@@ -12,6 +12,17 @@ class CacheChunks(
         val index = innerList.binarySearch(element, comparator).let { if (it < 0) -it - 1 else it }
         innerList.add(index, element)
         merge()
+    }
+
+    fun offsetInChunks(offset: Long): LongRange? {
+        merge()
+        // offset is larger or equal than it.first, and less than it.last
+        val index = innerList.binarySearch { (offset - it.first).toInt() }
+        return if (index >= 0) {
+            innerList[index]
+        } else {
+            null
+        }
     }
 
     fun remove(element: LongRange): Boolean {
@@ -25,41 +36,41 @@ class CacheChunks(
     }
 
     private fun mergeOverlappingRanges(sortedRanges: MutableList<LongRange>): List<LongRange> {
-        val mergedRanges = mutableListOf<LongRange>()
-        var currentRange = sortedRanges[0]
+        val merged = mutableListOf<LongRange>()
+        var current = sortedRanges[0]
 
         for (i in 1 until sortedRanges.size) {
-            val nextRange = sortedRanges[i]
+            val next = sortedRanges[i]
 
-            currentRange = if (currentRange.last + 1 >= nextRange.first) { // Check for overlap
-                currentRange.first..maxOf(currentRange.last, nextRange.last)
+            current = if (current.last + 1 >= next.first) { // Check for overlap
+                current.first..maxOf(current.last, next.last)
             } else {
-                mergedRanges.add(currentRange)
-                nextRange
+                merged.add(current)
+                next
             }
         }
 
-        mergedRanges.add(currentRange)
-        return mergedRanges
+        merged.add(current)
+        return merged
     }
 
     @Synchronized
-    fun merge() {
+    private fun merge() {
         if (innerList.isEmpty() || innerList.size == 1) return
         val nList = mergeOverlappingRanges(this.innerList)
         innerList.clear()
         innerList.addAll(nList)
     }
 
-    fun gaps(): List<LongRange> {
-        merge()
-        val gaps = mutableListOf<LongRange>()
-
-        for (i in 0 until innerList.size - 1) {
-            gaps.add((innerList[i].last + 1) until innerList[i + 1].first)
-        }
-        return gaps.toList()
-    }
+//    fun gaps(): List<LongRange> {
+//        merge()
+//        val gaps = mutableListOf<LongRange>()
+//
+//        for (i in 0 until innerList.size - 1) {
+//            gaps.add((innerList[i].last + 1) until innerList[i + 1].first)
+//        }
+//        return gaps.toList()
+//    }
 
     @Synchronized
     fun noGapsIn(range: LongRange): Boolean {

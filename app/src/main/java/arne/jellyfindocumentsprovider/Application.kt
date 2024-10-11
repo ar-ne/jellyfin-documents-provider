@@ -10,7 +10,7 @@ import logcat.LogcatLogger
 class Application : Application() {
     override fun onCreate() {
         super.onCreate()
-        LogcatLogger.install(AndroidLogcatLogger(LogPriority.DEBUG))
+        LogcatLogger.install(AndroidLogcatLogger(LogPriority.VERBOSE))
         ObjectBox.init(this)
         RandomAccessBucket.init(applicationContext.cacheDir.toPath())
     }

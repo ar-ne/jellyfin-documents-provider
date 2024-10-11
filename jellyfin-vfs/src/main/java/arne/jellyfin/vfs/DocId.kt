@@ -6,17 +6,18 @@ data class DocId(
     val type: DocType,
     val id: String
 ) {
-    override fun toString() = "${type.name}://$id"
-    fun toTypedId() = "${type.name}://${id}"
+    override fun toString() = "${type.name}=$id"
+    fun toTypedId() = "${type.name}=${id}"
 
+    @Suppress("EnumEntryName")
     enum class DocType {
-        ROOT, LIBRARY, ALBUM, FILE;
+        root, lib, album, file;
     }
 }
 
 fun String.toTypedId(type: DocId.DocType) = DocId(type, this)
 fun String.toDocId(): DocId {
-    val (type, value) = split("://")
+    val (type, value) = split("=")
     return DocId(
         DocType.valueOf(type), value
     )
