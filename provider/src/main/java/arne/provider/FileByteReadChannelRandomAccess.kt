@@ -109,7 +109,7 @@ class FileByteReadChannel(
      * @param dataOffset offset in [data]
      */
     fun read(range: LongRange, data: ByteArray, dataOffset: Int): Int {
-        val size = (range.last - range.first + 1).toInt()
+        val size = (range.last - range.first).toInt()
         val buffer = ByteArray(size)
         runBlocking { channel.readFully(buffer, 0, size) }
 
