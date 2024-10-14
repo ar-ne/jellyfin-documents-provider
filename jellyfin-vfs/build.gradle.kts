@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    id("io.objectbox")
 }
 
 android {
@@ -48,4 +47,7 @@ dependencies {
 
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
+
+    implementation(libs.objectbox.android.objectbrowser)
 }
+apply(plugin = "io.objectbox")

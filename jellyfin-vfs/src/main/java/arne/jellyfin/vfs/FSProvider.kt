@@ -44,10 +44,16 @@ object FSProvider {
 
     fun isChildDocument(parent: DocId, document: DocId): Boolean {
         return when (document.type) {
-            DocType.lib ->
+            DocType.lib -> if (parent.type == DocType.root) {
                 ObjectBox.server.findByUUID(parent.id).library.containsKey(document.id)
+            } else {
+                false
+            }
 
             DocType.file -> {
+                if (parent.type == DocType.file) {
+                    return false
+                }
                 if (parent.type == DocType.root) {
                     // if it checking from root directory
                     isChildDocument(parent, DocId(DocType.lib, document.id))
@@ -68,7 +74,8 @@ object FSProvider {
         }
         return with(ObjectBox) {
             when (parent.type) {
-                DocType.root -> server.findByUUID(parent.id).getLibrariesAsProjection()
+                DocType.root -> server.all.map { it.asProjection() }
+                DocType.server -> server.findByUUID(parent.id).getLibrariesAsProjection()
 
                 DocType.lib -> virtualFile.findAllByLibId(parent.id).map {
                     it.asProjection() + it.mediaInfo.target.asProjection()
@@ -81,7 +88,7 @@ object FSProvider {
 
     fun getOne(id: DocId) = with(ObjectBox) {
         when (id.type) {
-            DocType.root -> server.findByUUID(id.id).getLibrariesAsProjection()
+            DocType.root -> server.all.map { it.asProjection() }
             DocType.lib -> server.findByLibraryId(id.id).getLibrariesAsProjection()
             DocType.file -> listOf(virtualFile.findByDocumentId(id.id).asProjection())
             else -> TODO("Not yet implemented")
@@ -93,10 +100,8 @@ object FSProvider {
             when (id.type) {
                 DocType.file -> {
                     val vf = virtualFile.findByDocumentId(id.id)
-                    vf.thumbnailQueryId?.let {
-                        val server = vf.server.target.asAccessor(this@streamThumbnail)
-                        runBlocking { server.streamThumbnail(it, sizeHint?.x, sizeHint?.y) }
-                    }
+                    val server = vf.server.target.asAccessor(this@streamThumbnail)
+                    runBlocking { server.streamThumbnail(vf.documentId, sizeHint?.x, sizeHint?.y) }
                 }
 
                 else -> null
@@ -129,6 +134,15 @@ fun MediaInfo.asProjection() = listOfNotNull(
     year?.let { AudioColumns.YEAR to it },
 ).toMap()
 
+fun JellyfinServer.asProjection() = mapOf(
+    Document.COLUMN_DOCUMENT_ID to uuid.toTypedId(DocType.server),
+    Document.COLUMN_DISPLAY_NAME to serverName,
+    Document.COLUMN_MIME_TYPE to Document.MIME_TYPE_DIR,
+    Document.COLUMN_SIZE to 0,
+    Document.COLUMN_LAST_MODIFIED to 0,
+    Document.COLUMN_FLAGS to 0
+)
+
 fun VirtualFile.asProjection(): Map<String, Any> {
     val flag = if (mediaInfo.target.hasThumbnail)
         Document.FLAG_SUPPORTS_THUMBNAIL else 0
@@ -146,7 +160,7 @@ fun VirtualFile.asProjection(): Map<String, Any> {
 fun JellyfinServer.getLibrariesAsProjection() = library.entries
     .map { (id, name) ->
         mapOf(
-            Document.COLUMN_DOCUMENT_ID to DocId(DocType.lib, id).toTypedId(),
+            Document.COLUMN_DOCUMENT_ID to id.toTypedId(DocType.lib),
             Document.COLUMN_DISPLAY_NAME to name,
             Document.COLUMN_MIME_TYPE to Document.MIME_TYPE_DIR,
             Document.COLUMN_SIZE to 0,

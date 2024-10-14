@@ -1,19 +1,23 @@
 package arne.provider
 
 import arne.hacks.short
-import arne.jellyfin.vfs.CacheChunks
+import arne.jellyfin.vfs.CacheInfo
 import arne.jellyfin.vfs.FileStreamFactory
+import arne.jellyfin.vfs.ObjectBox
 import arne.jellyfin.vfs.VirtualFile
+import arne.jellyfin.vfs.getOrCreate
 import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.cancel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 import logcat.logcat
+import java.io.Closeable
 import java.io.File
-import java.io.RandomAccessFile
 import kotlin.concurrent.Volatile
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.min
 
 class FileByteReadChannelRandomAccess(
     file: File,
@@ -22,11 +26,16 @@ class FileByteReadChannelRandomAccess(
 ) : RandomAccess() {
     override val length: Long = virtualFile.size
     private var currentJob: Job? = null
-    private val cache = CacheFile(file)
     private val logId = virtualFile.documentId.short
     private var channel: FileByteReadChannel? = null
+    private val cacheInfo = ObjectBox.cacheInfo.getOrCreate(virtualFile, file.absolutePath)
+    private val cache = cacheInfo.cacheFile
 
     override fun read(offset: Long, size: Int, data: ByteArray): Int {
+        if (offset < 0 || size < 0 || offset > length) {
+            return -1
+        }
+
         // check if already in cache
         val chunk = cache.offsetInChunks(offset)
         val cacheType = if (chunk == null) {
@@ -38,7 +47,7 @@ class FileByteReadChannelRandomAccess(
         }
 
         logcat(LogPriority.VERBOSE) {
-            "read $logId: offset=$offset, size=$size, cacheType=$cacheType, chunk=$chunk"
+            "read $logId: offset=$offset, size=$size, cacheType=$cacheType, cacheChunk=$chunk"
         }
 
         when (cacheType) {
@@ -47,7 +56,7 @@ class FileByteReadChannelRandomAccess(
             }
 
             ReadType.PARTIAL_CACHE -> {
-                val fromDisk = ByteArray((chunk!!.last - offset + 1).toInt())
+                val fromDisk = ByteArray((chunk!!.last - offset).toInt())
                 val fromDiskSize = read(offset, fromDisk.size, fromDisk)
                 fromDisk.copyInto(data, 0, 0, fromDiskSize)
 
@@ -56,35 +65,34 @@ class FileByteReadChannelRandomAccess(
             }
 
             ReadType.ALL_CACHE -> {
-                with(cache) {
-                    return chunk!!.read(offset, size, data)
-                }
+                return cache.read(offset, size, data)
             }
         }
     }
 
+    @Synchronized
     private fun getOrCreateChannelFor(start: Long): FileByteReadChannel {
-        synchronized(this) {
-            if (channel != null && channel!!.availableForPosition(start)) {
+        if (channel != null) {
+            if (channel!!.availableForPosition(start)) {
                 return channel!!
             } else {
                 val stream = runBlocking { fileStreamFactory(start, null) }
-                channel = FileByteReadChannel(stream.channel, cache, start..stream.length)
+                channel?.close()
+                channel = FileByteReadChannel(stream.channel, cache, stream.range!!)
             }
-
-            return channel!!
+        } else {
+            val stream = runBlocking { fileStreamFactory(start, null) }
+            channel = FileByteReadChannel(stream.channel, cache, stream.range!!)
         }
-    }
 
-    fun requestData(offset: Long, size: Int) {
-        logcat(LogPriority.VERBOSE) {
-            "requestData $logId: offset=$offset, size=$size"
-        }
+        return channel!!
     }
 
     override fun close() {
         currentJob?.cancel(cause = CancelCauseCloseException())
         coroutineContext.cancelChildren()
+        channel?.close()
+        cacheInfo.close()
     }
 
     inner class CancelCauseNewRangeException : CancellationException()
@@ -97,9 +105,9 @@ private enum class ReadType {
 
 class FileByteReadChannel(
     private val channel: ByteReadChannel,
-    private val cacheFile: CacheFile,
+    private val cacheFile: CacheInfo.CacheFile,
     private val channelRange: LongRange,
-) : ByteReadChannel by channel {
+) : ByteReadChannel by channel, Closeable {
     @Volatile
     private var currentPosition = channelRange.first
 
@@ -108,8 +116,9 @@ class FileByteReadChannel(
      * @param data [RandomAccess.read]
      * @param dataOffset offset in [data]
      */
+    @Synchronized
     fun read(range: LongRange, data: ByteArray, dataOffset: Int): Int {
-        val size = (range.last - range.first).toInt()
+        val size: Int = min((range.last - range.first), channelRange.last - currentPosition).toInt()
         val buffer = ByteArray(size)
         runBlocking { channel.readFully(buffer, 0, size) }
 
@@ -122,28 +131,8 @@ class FileByteReadChannel(
     fun availableForPosition(pos: Long): Boolean {
         return pos in (currentPosition..channelRange.last)
     }
-}
 
-class CacheFile(
-    file: File,
-    innerList: MutableList<LongRange> = mutableListOf()
-) : CacheChunks(
-    innerList = innerList
-) {
-    private val fileRA = RandomAccessFile(file, "rw")
-
-    fun LongRange.read(offset: Long, size: Int, data: ByteArray): Int {
-        synchronized(fileRA) {
-            fileRA.seek(first + offset)
-            return fileRA.read(data, 0, size)
-        }
-    }
-
-    fun write(offset: Long, data: ByteArray) {
-        synchronized(fileRA) {
-            fileRA.seek(offset)
-            fileRA.write(data)
-            add(offset..offset + data.size)
-        }
+    override fun close() {
+        channel.cancel()
     }
 }

@@ -11,11 +11,11 @@ data class DocId(
 
     @Suppress("EnumEntryName")
     enum class DocType {
-        root, lib, album, file;
+        root, lib, album, file, server;
     }
 }
 
-fun String.toTypedId(type: DocId.DocType) = DocId(type, this)
+fun String.toTypedId(type: DocType) = DocId(type, this)
 fun String.toDocId(): DocId {
     val (type, value) = split("=")
     return DocId(

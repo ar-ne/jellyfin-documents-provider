@@ -17,22 +17,7 @@ open class CacheChunks(
     fun offsetInChunks(offset: Long): LongRange? {
         merge()
         // offset is larger or equal than it.first, and less than it.last
-        val index = innerList.binarySearch { (offset - it.first).toInt() }
-        return if (index >= 0) {
-            innerList[index]
-        } else {
-            null
-        }
-    }
-
-    fun remove(element: LongRange): Boolean {
-        val index = innerList.binarySearch(element, comparator)
-        return if (index >= 0) {
-            innerList.removeAt(index)
-            true
-        } else {
-            false
-        }
+        return innerList.find { it.first <= offset && it.last > offset }
     }
 
     private fun mergeOverlappingRanges(sortedRanges: MutableList<LongRange>): List<LongRange> {
@@ -55,7 +40,7 @@ open class CacheChunks(
     }
 
     @Synchronized
-    private fun merge() {
+    protected fun merge() {
         if (innerList.isEmpty() || innerList.size == 1) return
         val nList = mergeOverlappingRanges(this.innerList)
         innerList.clear()
@@ -79,8 +64,8 @@ open class CacheChunks(
     }
 }
 
-class CacheChunksConverter : PropertyConverter<CacheChunks, String> {
-    override fun convertToEntityProperty(databaseValue: String?): CacheChunks {
+class CacheChunksConverter : PropertyConverter<List<LongRange>, String> {
+    override fun convertToEntityProperty(databaseValue: String?): List<LongRange> {
         return CacheChunks(innerList = databaseValue?.split(';')?.filter { it.isNotBlank() }
             ?.map {
                 val split = it.split(',').map { s -> s.trim().toLong() }
@@ -88,7 +73,7 @@ class CacheChunksConverter : PropertyConverter<CacheChunks, String> {
             }?.toMutableList() ?: mutableListOf())
     }
 
-    override fun convertToDatabaseValue(cc: CacheChunks?): String {
+    override fun convertToDatabaseValue(cc: List<LongRange>?): String {
         return cc?.joinToString(";") {
             it.first.toString() + "," + it.last
         } ?: ""

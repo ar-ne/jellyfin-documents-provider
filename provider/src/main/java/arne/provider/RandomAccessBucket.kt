@@ -25,9 +25,8 @@ object RandomAccessBucket {
         val key = vf.documentId
         synchronized(this) {
             refCnt[key] = refCnt.getOrDefault(key, 0) + 1
-            if (mapper.containsKey(key))
-                return mapper[key]!!
-            else mapper[key] = newBufferedRA(fsf, vf, bitrate)
+            if (!mapper.containsKey(key))
+                mapper[key] = newBufferedRA(fsf, vf, bitrate)
 
             logcat(LogPriority.DEBUG) { "get(${key.short}): refCnt = ${refCnt[key]}" }
             return mapper[key]!!

@@ -13,6 +13,7 @@ import android.os.ParcelFileDescriptor
 import android.os.StrictMode
 import android.os.storage.StorageManager
 import android.preference.PreferenceManager
+import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
 import android.provider.DocumentsContract.Root
 import arne.hacks.short
@@ -36,7 +37,7 @@ import logcat.logcat
 import java.io.FileNotFoundException
 
 
-class DocumentsProvider() : android.provider.DocumentsProvider() {
+class DocumentsProvider : android.provider.DocumentsProvider() {
     private val providerContext: Context by lazy { context!! }
     private val storageManager: StorageManager by lazy { providerContext.getSystemService(Context.STORAGE_SERVICE) as StorageManager }
     private val preference: SharedPreferences by lazy {
@@ -121,11 +122,18 @@ class DocumentsProvider() : android.provider.DocumentsProvider() {
                     }
                 } catch (e: Exception) {
                     // Handle any exceptions that occur while downloading the thumbnail
-                    logcat(LogPriority.ERROR) { "openDocumentThumbnail: failed to get thumbnail file=${documentId.short} \n${e.stackTraceToString()}" }
+                    logcat(LogPriority.ERROR) { "openDocumentThumbnail: failed to get thumbnail $documentId \n${e.stackTraceToString()}" }
                 }
             }
             AssetFileDescriptor(read, 0, total)
         }
+    }
+
+    override fun findDocumentPath(
+        parentDocumentId: String?,
+        childDocumentId: String?
+    ): DocumentsContract.Path {
+        return super.findDocumentPath(parentDocumentId, childDocumentId)
     }
 
     @Throws(FileNotFoundException::class)
@@ -149,25 +157,6 @@ class DocumentsProvider() : android.provider.DocumentsProvider() {
             }
         }
     }
-
-    private fun addVirtualDirRow(
-        cursor: MatrixCursor, id: String, name: String
-    ) {
-        val row = cursor.newRow()
-        row.add(Document.COLUMN_DOCUMENT_ID, id)
-        row.add(Document.COLUMN_DISPLAY_NAME, name)
-        row.add(Document.COLUMN_SIZE, 0)
-        row.add(Document.COLUMN_MIME_TYPE, Document.MIME_TYPE_DIR)
-        row.add(Document.COLUMN_LAST_MODIFIED, 0)
-        row.add(Document.COLUMN_FLAGS, 0)
-    }
-
-
-    private fun extractUniqueId(documentId: String) = documentId.toDocId().id
-
-
-    private fun getDocTypeByDocId(documentId: String) = documentId.toDocId().type
-
     companion object {
         private val DEFAULT_DOCUMENT_PROJECTION: Array<String> = arrayOf(
             Document.COLUMN_DOCUMENT_ID,

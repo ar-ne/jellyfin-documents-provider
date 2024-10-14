@@ -1,8 +1,11 @@
 package arne.jellyfin.vfs
 
 import android.content.Context
+import android.util.Log
 import io.objectbox.Box
 import io.objectbox.BoxStore
+import io.objectbox.android.Admin
+
 
 object ObjectBox {
     lateinit var store: BoxStore
@@ -19,6 +22,8 @@ object ObjectBox {
         store = MyObjectBox.builder()
             .androidContext(context.applicationContext)
             .build()
+        val started = Admin(store).start(context)
+        Log.i("ObjectBoxAdmin", "Started: $started")
 
         server = store.boxFor(JellyfinServer::class.java)
         virtualFile = store.boxFor(VirtualFile::class.java)

@@ -83,13 +83,20 @@ class JellyfinAccessor(ctx: Context, val credential: JellyfinServer) {
     }
 
     suspend fun streamThumbnail(id: String, w: Int? = 250, h: Int? = 250) =
-        api.imageApi.getItemImage(
-            id.UUID(),
-            ImageType.PRIMARY,
-            fillWidth = w,
-            fillHeight = h,
-            quality = 96
-        ).toStream(Stream.Type.FILE)
+        try {
+            api.imageApi.getItemImage(
+                id.UUID(),
+                ImageType.PRIMARY,
+                fillWidth = w,
+                fillHeight = h,
+                quality = 96
+            ).toStream(Stream.Type.FILE)
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR) {
+                "unable to stream thumbnail for $id " +
+                (e.message ?: "Error querying Jellyfin API: ${e.stackTraceToString()}") }
+            null
+        }
 
 
     suspend fun getAudioStreamFactory(
@@ -105,7 +112,7 @@ class JellyfinAccessor(ctx: Context, val credential: JellyfinServer) {
         }
 
     fun getAudioFileStreamFactory(id: DocId): FileStreamFactory {
-        val url = api.libraryApi.getFileUrl(id.UUID())
+        val url = api.libraryApi.getDownloadUrl(id.UUID())
         val ktorClient = HttpClient()
         return { start, _ ->
             ktorClient.get(url) {
@@ -133,10 +140,14 @@ class JellyfinAccessor(ctx: Context, val credential: JellyfinServer) {
                     )
                 }
             }.let {
+                logcat(LogPriority.DEBUG) {
+                    "opened stream for url: $url, headers: ${it.headers}"
+                }
                 Stream(
-                    length = it.contentLength() ?: -1,
                     channel = it.bodyAsChannel(),
-                    type = Stream.Type.FILE
+                    length = it.contentLength() ?: -1,
+                    type = Stream.Type.FILE,
+                    range = it.headers[HttpHeaders.ContentRange]?.resolveRangeHeader()
                 )
             }
 
@@ -192,7 +203,8 @@ class JellyfinAccessor(ctx: Context, val credential: JellyfinServer) {
     data class Stream(
         val channel: ByteReadChannel,
         val length: Long,
-        val type: Type
+        val type: Type,
+        val range: LongRange?
     ) {
         enum class Type {
             FILE, AUDIO_STREAM
@@ -203,9 +215,17 @@ class JellyfinAccessor(ctx: Context, val credential: JellyfinServer) {
         logcat(LogPriority.DEBUG) {
             "response status=${this.status}, headers: ${this.headers}"
         }
-        val length = headers["content-length"]?.first()?.toLong() ?: -1
-        return Stream(content, length, type)
+        val length = headers[HttpHeaders.ContentLength]?.first()?.toLong() ?: -1
+        val rangeStr = headers[HttpHeaders.ContentRange]?.first()
+
+        return Stream(content, length, type, rangeStr?.resolveRangeHeader())
     }
+
+    private fun String.resolveRangeHeader(): LongRange? =
+        Regex("""bytes (\d+)-(\d+)/(\d+)""").find(this)?.let {
+            val (start, end, _) = it.destructured
+            return LongRange(start.toLong(), end.toLong())
+        }
 }
 
 private fun DocId.UUID(): UUID = UUID.fromString(id)
