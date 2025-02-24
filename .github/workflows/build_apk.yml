@@ -40,7 +40,7 @@ jobs:
           BUILD_TOOLS_VERSION: "35.0.0"
 
       # Example use of `signedReleaseFile` output -- not needed
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: Signed debug apk
           path: ${{steps.sign_debug.outputs.signedReleaseFile}}
